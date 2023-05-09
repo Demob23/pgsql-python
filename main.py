@@ -90,25 +90,40 @@ def del_client(user_id:int):
     with conn.cursor() as cur:
         cur.execute("""
                     DELETE FROM Users
-                    WHERE user_id = %s
+                    WHERE user_id = %s;
                     DELETE FROM Phone_numbers
                     WHERE user_id = %s
                     """, (user_id, user_id))
+        conn.commit()
 
 
-def search_client(user_id:int, name:str, surname:str, email:str, phone_number:str):
+def search_client(**kwargs):
     with conn.cursor() as cur:
-        cur.execute()
+        if kwargs.get("name") is None:
+            kwargs["name"] = "NULL"
+        if kwargs.get("surname") is None:
+            kwargs["surname"] = "NULL"
+        if kwargs.get("email") is None:
+            kwargs["email"] = "NULL"
+        if kwargs.get("phone_number") is None:
+            kwargs["phone_number"] = "NULL"
+        cur.execute("""
+                    SELECT * FROM Users as u
+                    FULL OUTER JOIN Phone_numbers AS p ON u.user_id = p.user_id
+                    WHERE name = %s OR surname = %s OR email = %s OR phone_number = %s
+                    """, (kwargs["name"], kwargs["surname"], kwargs["email"], kwargs["phone_number"]))
+        print(cur.fetchone())
 
 
 if __name__ == "__main__":
     conn = psycopg2.connect(database="personal_info", user="postgres", password=password)
     create_db()
     add_client("Иван", "Иванов", "example@mail.com")
+    add_client("Антон", "Антонов", "lslals@faff.co")
     add_phone_number(1, "+79999999999")
     add_phone_number(1, "+79999999998")
     edit_client_info(1, name="Антон")
     del_phone_number("1", "+79999999999")
     del_client(1)
-    search_client()
+    search_client(name="Антон")
     conn.close()
